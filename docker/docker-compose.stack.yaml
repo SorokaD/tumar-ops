@@ -27,7 +27,8 @@ services:
         https://grafana.tumar.tech/api/health,
         https://prometheus.tumar.tech/-/healthy,
         https://portainer.tumar.tech/,
-        https://traefik.tumar.tech/
+        https://traefik.tumar.tech/,
+        https://tumar.tech/api/health
       KEEPALIVE_INTERVAL_SECONDS: ${KEEPALIVE_INTERVAL_SECONDS:-120}
       KEEPALIVE_TIMEOUT_SECONDS: ${KEEPALIVE_TIMEOUT_SECONDS:-10}
       KEEPALIVE_LOG_LEVEL: ${KEEPALIVE_LOG_LEVEL:-INFO}

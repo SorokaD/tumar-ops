@@ -21,10 +21,11 @@ okx-hft-ops/
 │       └── superset_config.py       # Python config
 │
 ├── docker/                          # Docker Compose stacks
-│   ├── docker-compose.traefik.yml   # Traefik reverse proxy + Let's Encrypt
+│   ├── docker-compose.traefik.yaml  # Traefik reverse proxy + Let's Encrypt
 │   ├── docker-compose.portainer.yaml# Portainer container management
 │   ├── docker-compose.stack.yaml    # Monitoring: Prometheus, Grafana, Loki, Promtail
-│   └── docker-compose.ml.yaml       # ML Platform: MinIO, MLflow, Superset, Airflow
+│   ├── docker-compose.ml.yaml       # ML Platform: MinIO, MLflow, Superset, Airflow
+│   └── docker-compose.web.yaml      # Public website: tumar.tech
 │
 ├── airflow/                         # Airflow DAGs, logs, plugins
 │   ├── dags/                        # DAG definitions
@@ -42,7 +43,8 @@ okx-hft-ops/
 ### Prerequisites
 
 - Docker & Docker Compose v2
-- Domain pointing to your server (*.tumar.tech in this example)
+- Domain pointing to your server (`tumar.tech` and `*.tumar.tech`)
+- `tumar-web` cloned next to this repo if you deploy the public site
 
 ### 1. Create External Network
 
@@ -74,7 +76,7 @@ Deploy in order (Traefik should be first):
 
 ```bash
 # 1. Traefik (reverse proxy, SSL termination)
-docker compose -f docker/docker-compose.traefik.yml up -d
+docker compose -f docker/docker-compose.traefik.yaml up -d
 
 # 2. Portainer (optional, container management UI)
 docker compose -f docker/docker-compose.portainer.yaml up -d
@@ -82,7 +84,10 @@ docker compose -f docker/docker-compose.portainer.yaml up -d
 # 3. Monitoring Stack (Prometheus, Grafana, Loki, Promtail)
 docker compose -f docker/docker-compose.stack.yaml --env-file .env up -d
 
-# 4. ML Platform (MinIO, MLflow, Superset, Airflow)
+# 4. Public website (tumar.tech)
+docker compose -f docker/docker-compose.web.yaml --env-file .env up -d --build
+
+# 5. ML Platform (MinIO, MLflow, Superset, Airflow)
 docker compose -f docker/docker-compose.ml.yaml --env-file .env up -d
 ```
 
@@ -113,6 +118,7 @@ After deployment, services are available at:
 
 | Service    | URL                           | Description                        |
 |------------|-------------------------------|------------------------------------|
+| Website    | https://tumar.tech            | Public portfolio (Next.js)         |
 | Traefik    | https://traefik.tumar.tech    | Reverse proxy dashboard            |
 | Portainer  | https://portainer.tumar.tech  | Container management UI            |
 | Grafana    | https://grafana.tumar.tech    | Metrics visualization & dashboards |
@@ -146,6 +152,31 @@ For local testing without Traefik:
 - **Loki** — Log aggregation system
 - **Promtail** — Log shipper (collects Docker logs)
 
+### Public website (`docker-compose.web.yaml`)
+
+- **tumar-web** — Next.js portfolio at `https://tumar.tech`
+- Build context is the `tumar-web` repo (sibling directory by default, override with `TUMAR_WEB_PATH`)
+- Container is capped at 512 MB RAM so it cannot starve Grafana / Prometheus
+
+DNS: add an **A record for `tumar.tech`** to this VPS. A wildcard `*.tumar.tech` does not cover the apex domain. HTTP-01 Let's Encrypt will fail until that record exists.
+
+Keep the existing ops directory on the server. Clone the site next to it, do not rename the running ops folder (Compose project/volumes are tied to that path).
+
+```text
+/opt/hft/okx-hft-ops     # current ops checkout — name may differ, leave it
+/opt/hft/tumar-web       # git clone .../okx-hft-tumar-web.git tumar-web
+```
+
+Set `TUMAR_WEB_PATH` in `.env` to the absolute path of `tumar-web`.
+
+Rebuild after site changes:
+
+```bash
+docker compose -f docker/docker-compose.web.yaml --env-file .env up -d --build
+```
+
+Health check: `https://tumar.tech/api/health` → `{"status":"ok"}`.
+
 ### ML Platform (`docker-compose.ml.yaml`)
 
 - **MinIO** — S3-compatible object storage for artifacts
@@ -164,15 +195,17 @@ docker compose -f docker/docker-compose.stack.yaml logs -f
 # Specific service
 docker logs -f grafana
 docker logs -f mlflow
+docker logs -f tumar-web
 ```
 
 ### Stop Stacks
 
 ```bash
 docker compose -f docker/docker-compose.ml.yaml down
+docker compose -f docker/docker-compose.web.yaml down
 docker compose -f docker/docker-compose.stack.yaml down
 docker compose -f docker/docker-compose.portainer.yaml down
-docker compose -f docker/docker-compose.traefik.yml down
+docker compose -f docker/docker-compose.traefik.yaml down
 ```
 
 ### Reset with Data Loss

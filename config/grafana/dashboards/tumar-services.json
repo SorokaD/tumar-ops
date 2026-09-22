@@ -150,7 +150,24 @@
       "type": "stat"
     },
     {
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [{"options": {"0": {"color": "red", "index": 1, "text": "DOWN"}, "1": {"color": "green", "index": 0, "text": "UP"}}, "type": "value"}],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]},
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 3, "w": 3, "x": 0, "y": 5},
+      "id": 9,
+      "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "probe_success{service=\"tumar.tech\"}", "legendFormat": "Website", "refId": "A"}],
+      "title": "Website",
+      "type": "stat"
+    },
+    {
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 8},
       "id": 101,
       "options": {"code": {"language": "plaintext", "showLineNumbers": false, "showMiniMap": false}, "content": "---", "mode": "markdown"},
       "pluginVersion": "11.2.2",
@@ -166,7 +183,7 @@
           "unit": "percent"
         }
       },
-      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 6},
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 9},
       "id": 10,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
       "targets": [{"expr": "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\",job=\"node_ops\"}[5m])) * 100)", "legendFormat": "CPU", "refId": "A"}],
@@ -183,7 +200,7 @@
           "unit": "percent"
         }
       },
-      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 6},
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 9},
       "id": 11,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
       "targets": [{"expr": "(1 - (node_memory_MemAvailable_bytes{job=\"node_ops\"} / node_memory_MemTotal_bytes{job=\"node_ops\"})) * 100", "legendFormat": "Memory", "refId": "A"}],
@@ -200,7 +217,7 @@
           "unit": "percent"
         }
       },
-      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 6},
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 9},
       "id": 12,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
       "targets": [{"expr": "(1 - (node_filesystem_avail_bytes{job=\"node_ops\",mountpoint=\"/\",fstype!=\"rootfs\"} / node_filesystem_size_bytes{job=\"node_ops\",mountpoint=\"/\",fstype!=\"rootfs\"})) * 100", "legendFormat": "Disk", "refId": "A"}],
@@ -218,7 +235,7 @@
           "unit": "reqps"
         }
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 10},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 13},
       "id": 20,
       "options": {"legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
       "targets": [{"expr": "sum(rate(traefik_entrypoint_requests_total{job=\"traefik\"}[5m])) by (entrypoint)", "legendFormat": "{{entrypoint}}", "refId": "A"}],
@@ -236,7 +253,7 @@
           "unit": "ms"
         }
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 10},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 13},
       "id": 21,
       "options": {"legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
       "targets": [{"expr": "probe_duration_seconds{job=\"blackbox_http\"} * 1000", "legendFormat": "{{service}}", "refId": "A"}],

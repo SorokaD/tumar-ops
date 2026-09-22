@@ -121,6 +121,7 @@ scrape_configs:
           - https://prometheus.tumar.tech/-/healthy
           - https://portainer.tumar.tech/
           - https://traefik.tumar.tech/
+          - https://tumar.tech/api/health
         labels:
           node: 'ops'
     relabel_configs:
