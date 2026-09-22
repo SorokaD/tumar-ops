@@ -26,6 +26,8 @@ services:
         NEXT_PUBLIC_LINKEDIN_URL: ${NEXT_PUBLIC_LINKEDIN_URL:-}
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
         NEXT_PUBLIC_SUPERSET_PUBLIC_URL: ${NEXT_PUBLIC_SUPERSET_PUBLIC_URL:-}
+        NEXT_PUBLIC_SITE_AUTHOR: ${NEXT_PUBLIC_SITE_AUTHOR:-Dmitrii Soroka}
+        NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:-}
     image: tumar-web:latest
     container_name: tumar-web
     restart: unless-stopped
@@ -38,6 +40,8 @@ services:
       NEXT_PUBLIC_LINKEDIN_URL: ${NEXT_PUBLIC_LINKEDIN_URL:-}
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
       NEXT_PUBLIC_SUPERSET_PUBLIC_URL: ${NEXT_PUBLIC_SUPERSET_PUBLIC_URL:-}
+      NEXT_PUBLIC_SITE_AUTHOR: ${NEXT_PUBLIC_SITE_AUTHOR:-Dmitrii Soroka}
+      NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:-}
     healthcheck:
       test:
         [
@@ -66,6 +70,15 @@ services:
       - "traefik.http.routers.tumar-web.tls.certresolver=letsencrypt"
       - "traefik.http.services.tumar-web.loadbalancer.server.port=3000"
       - "traefik.http.routers.tumar-web.middlewares=tumar-web-security"
+      # www.tumar.tech → https://tumar.tech (301). Covered by *.tumar.tech DNS.
+      - "traefik.http.routers.tumar-web-www.rule=Host(`www.tumar.tech`)"
+      - "traefik.http.routers.tumar-web-www.entrypoints=websecure"
+      - "traefik.http.routers.tumar-web-www.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tumar-web-www.service=tumar-web"
+      - "traefik.http.routers.tumar-web-www.middlewares=tumar-web-www-redirect"
+      - "traefik.http.middlewares.tumar-web-www-redirect.redirectregex.regex=^https://www\\.tumar\\.tech/(.*)"
+      - "traefik.http.middlewares.tumar-web-www-redirect.redirectregex.replacement=https://tumar.tech/$${1}"
+      - "traefik.http.middlewares.tumar-web-www-redirect.redirectregex.permanent=true"
       - "traefik.http.middlewares.tumar-web-security.headers.stsSeconds=31536000"
       - "traefik.http.middlewares.tumar-web-security.headers.stsIncludeSubdomains=true"
       - "traefik.http.middlewares.tumar-web-security.headers.stsPreload=true"

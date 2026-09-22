@@ -10,4 +10,33 @@ groups:
           summary: "Instance down"
           description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes."
 
+  - name: website
+    rules:
+      - alert: WebsiteDown
+        expr: probe_success{instance="https://tumar.tech/api/health"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "tumar.tech is down"
+          description: "Blackbox probe for https://tumar.tech/api/health has failed for more than 2 minutes."
+
+      - alert: WebsiteHomepageDown
+        expr: probe_success{instance="https://tumar.tech/"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "tumar.tech homepage is down"
+          description: "Blackbox probe for https://tumar.tech/ has failed for more than 2 minutes."
+
+      - alert: WebsiteTLSExpiry
+        expr: (probe_ssl_earliest_cert_expiry{instance="https://tumar.tech/api/health"} - time()) / 86400 < 14
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "tumar.tech TLS certificate expires soon"
+          description: "Let's Encrypt certificate for tumar.tech expires in less than 14 days."
+
 

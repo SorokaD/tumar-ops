@@ -177,6 +177,12 @@ docker compose -f docker/docker-compose.web.yaml --env-file .env up -d --build
 
 Health check: `https://tumar.tech/api/health` → `{"status":"ok"}`.
 
+Grafana dashboard **tumar.tech Website** is provisioned automatically (`config/grafana/dashboards/tumar-web.json`). After pulling, reload Prometheus so the new blackbox target and alerts apply:
+
+```bash
+sudo docker exec prometheus wget -qO- --post-data='' http://localhost:9090/-/reload
+```
+
 ### ML Platform (`docker-compose.ml.yaml`)
 
 - **MinIO** — S3-compatible object storage for artifacts

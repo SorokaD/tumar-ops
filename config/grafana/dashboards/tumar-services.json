@@ -162,7 +162,7 @@
       "gridPos": {"h": 3, "w": 3, "x": 0, "y": 5},
       "id": 9,
       "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
-      "targets": [{"expr": "probe_success{service=\"tumar.tech\"}", "legendFormat": "Website", "refId": "A"}],
+      "targets": [{"expr": "probe_success{instance=\"https://tumar.tech/api/health\"}", "legendFormat": "Website", "refId": "A"}],
       "title": "Website",
       "type": "stat"
     },
