@@ -328,8 +328,9 @@ services:
     container_name: airflow-git-sync
     user: "0:0"
     environment:
-      GITSYNC_REPO: "git@github.com:SorokaD/okx-hft-airflow-dags.git"
-      GITSYNC_REF: "main"
+      # Port 443: many VPS block outbound GitHub SSH :22 (timeouts in git-sync logs).
+      GITSYNC_REPO: ${AIRFLOW_GITSYNC_REPO:-ssh://git@ssh.github.com:443/SorokaD/tumar-airflow.git}
+      GITSYNC_REF: ${AIRFLOW_GITSYNC_REF:-main}
       GITSYNC_ROOT: "/git"
       GITSYNC_LINK: "repo"
       GITSYNC_PERIOD: "30s"
