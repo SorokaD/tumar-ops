@@ -2,7 +2,7 @@
 # Traefik Reverse Proxy + Let's Encrypt + Prometheus Metrics
 # ============================================
 # Usage:
-#   docker compose -f docker/docker-compose.traefik.yaml up -d
+#   docker compose -f docker/docker-compose.traefik.yaml --env-file .env up -d
 #
 # Pre-requisites:
 #   1. Create network: docker network create web
@@ -11,7 +11,7 @@
 
 services:
   traefik:
-    image: traefik:latest
+    image: traefik:v3.6.4
     container_name: traefik
     restart: unless-stopped
     command:
@@ -70,8 +70,8 @@ services:
       
       # Basic auth for dashboard
       - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth"
-      # Password: admin (generate new with: htpasswd -nbB admin "your_password")
-      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$2y$$05$$3iNV8ewkLnP5kJvVwsRcMueoDIH8NCnQ3ydx.DRBmtjUb.K4eodTS"
+      # Хэш из .env (TRAEFIK_BASIC_AUTH), генерация — см. .env.example
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_BASIC_AUTH:?TRAEFIK_BASIC_AUTH is required in .env}"
     networks:
       - web
 

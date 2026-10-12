@@ -1,0 +1,93 @@
+# Деплой ops-сервера при push в main: CI → ручное подтверждение → SSH:
+# checkout на сервере переводится на коммит, scripts/deploy.sh перезапускает только затронутое.
+#
+# Секреты: VPS_SSH_HOST, VPS_SSH_USER, VPS_SSH_PRIVATE_KEY,
+#   VPS_DEPLOY_PATH — корень клона tumar-ops на сервере (/opt/hft/okx-hft-ops).
+# Окружение: Settings → Environments → production → Required reviewers.
+#
+# Документация: docs/deployment_cicd.md
+
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-ops-main
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+          DEPLOY_SHA: ${{ github.sha }}
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          command_timeout: 25m
+          envs: DEPLOY_PATH,DEPLOY_SHA
+          script: |
+            set -euo pipefail
+
+            if [ -z "${DEPLOY_PATH:-}" ]; then
+              echo "ERROR: secret VPS_DEPLOY_PATH is empty"
+              exit 1
+            fi
+            cd "${DEPLOY_PATH}"
+            echo "Deploy path: $(pwd)"
+            test -f .env || { echo "ERROR: .env missing in ${DEPLOY_PATH}"; exit 1; }
+
+            # Ручные правки на сервере не затираем молча.
+            if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+              echo "ERROR: server checkout has local changes to tracked files:"
+              git status --short --untracked-files=no
+              exit 1
+            fi
+
+            OLD_SHA="$(git rev-parse HEAD)"
+            for attempt in 1 2 3; do
+              if git fetch --quiet origin; then
+                break
+              fi
+              if [ "$attempt" -eq 3 ]; then
+                echo "ERROR: git fetch failed after 3 attempts"
+                exit 1
+              fi
+              echo "git fetch failed (attempt ${attempt}), retrying in 15s"
+              sleep 15
+            done
+            git cat-file -e "${DEPLOY_SHA}^{commit}" || { echo "ERROR: ${DEPLOY_SHA} not found after fetch"; exit 1; }
+
+            git checkout --quiet main
+            git reset --hard --quiet "${DEPLOY_SHA}"
+            echo "checkout: ${OLD_SHA} -> ${DEPLOY_SHA}"
+
+            rc=0
+            bash scripts/deploy.sh "${OLD_SHA}" "${DEPLOY_SHA}" || rc=$?
+            if [ "$rc" -eq 2 ]; then
+              echo "ERROR: compose validation failed, nothing applied; checkout restored to ${OLD_SHA}"
+              git reset --hard --quiet "${OLD_SHA}"
+              exit 1
+            fi
+            if [ "$rc" -ne 0 ]; then
+              echo "ERROR: deploy failed. Checkout stays at ${DEPLOY_SHA}; previous was ${OLD_SHA}."
+              echo "Rollback: git reset --hard ${OLD_SHA} && bash scripts/deploy.sh ${DEPLOY_SHA} ${OLD_SHA}"
+              exit 1
+            fi

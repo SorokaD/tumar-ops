@@ -76,10 +76,10 @@ Deploy in order (Traefik should be first):
 
 ```bash
 # 1. Traefik (reverse proxy, SSL termination)
-docker compose -f docker/docker-compose.traefik.yaml up -d
+docker compose -f docker/docker-compose.traefik.yaml --env-file .env up -d
 
 # 2. Portainer (optional, container management UI)
-docker compose -f docker/docker-compose.portainer.yaml up -d
+docker compose -f docker/docker-compose.portainer.yaml --env-file .env up -d
 
 # 3. Monitoring Stack (Prometheus, Grafana, Loki, Promtail)
 docker compose -f docker/docker-compose.stack.yaml --env-file .env up -d
@@ -177,11 +177,13 @@ docker compose -f docker/docker-compose.web.yaml --env-file .env up -d --build
 
 Health check: `https://tumar.tech/api/health` → `{"status":"ok"}`.
 
-Grafana dashboard **tumar.tech Website** is provisioned automatically (`config/grafana/dashboards/tumar-web.json`). After pulling, reload Prometheus so the new blackbox target and alerts apply:
+Grafana dashboard **tumar.tech Website** is provisioned automatically (`config/grafana/dashboards/tumar-web.json`).
 
-```bash
-sudo docker exec prometheus wget -qO- --post-data='' http://localhost:9090/-/reload
-```
+## 🚚 CI/CD
+
+Changes go through PR → `main` → manual approval → `scripts/deploy.sh` restarts only what changed.
+See [docs/deployment_cicd.md](docs/deployment_cicd.md). Do not edit tracked files on the server and
+never use `--remove-orphans` (all stacks share the Compose project `docker`).
 
 ### ML Platform (`docker-compose.ml.yaml`)
 
