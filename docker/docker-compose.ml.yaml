@@ -13,16 +13,16 @@ x-airflow-common: &airflow-common
   image: apache/airflow:2.10.2
   environment:
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY:-}
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY:?AIRFLOW__CORE__FERNET_KEY is required in .env}
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags/repo/dags
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-db:5432/${AIRFLOW_DB_NAME:-airflow}
-    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY:-secret}
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:?AIRFLOW_DB_PASSWORD is required in .env}@airflow-db:5432/${AIRFLOW_DB_NAME:-airflow}
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY:?AIRFLOW__WEBSERVER__SECRET_KEY is required in .env}
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
     PYTHONPATH: /opt/airflow/dags/repo/dags:${PYTHONPATH}
     # S3/MinIO connection for remote logging (optional)
     AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio}
-    AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minio123}
+    AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required in .env}
     MLFLOW_TRACKING_URI: http://mlflow:5000
   volumes:
     - airflow_dags_git:/opt/airflow/dags:ro
@@ -40,7 +40,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${MLFLOW_DB_USER:-mlflow}
-      POSTGRES_PASSWORD: ${MLFLOW_DB_PASSWORD:-mlflow}
+      POSTGRES_PASSWORD: ${MLFLOW_DB_PASSWORD:?MLFLOW_DB_PASSWORD is required in .env}
       POSTGRES_DB: ${MLFLOW_DB_NAME:-mlflow}
     volumes:
       - mlflow_db_data:/var/lib/postgresql/data
@@ -58,7 +58,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${SUPERSET_DB_USER:-superset}
-      POSTGRES_PASSWORD: ${SUPERSET_DB_PASSWORD:-superset}
+      POSTGRES_PASSWORD: ${SUPERSET_DB_PASSWORD:?SUPERSET_DB_PASSWORD is required in .env}
       POSTGRES_DB: ${SUPERSET_DB_NAME:-superset}
     volumes:
       - superset_db_data:/var/lib/postgresql/data
@@ -76,7 +76,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${AIRFLOW_DB_USER:-airflow}
-      POSTGRES_PASSWORD: ${AIRFLOW_DB_PASSWORD:-airflow}
+      POSTGRES_PASSWORD: ${AIRFLOW_DB_PASSWORD:?AIRFLOW_DB_PASSWORD is required in .env}
       POSTGRES_DB: ${AIRFLOW_DB_NAME:-airflow}
     volumes:
       - airflow_db_data:/var/lib/postgresql/data
@@ -97,7 +97,7 @@ services:
     command: server /data --console-address ":9001" --address ":9000"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio123}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required in .env}
       # Важно для работы за reverse proxy
       MINIO_BROWSER_REDIRECT_URL: https://minio.tumar.tech
       MINIO_SERVER_URL: https://s3.tumar.tech
@@ -150,14 +150,14 @@ services:
     environment:
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio}
-      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minio123}
-      MLFLOW_BACKEND_STORE_URI: postgresql://${MLFLOW_DB_USER:-mlflow}:${MLFLOW_DB_PASSWORD:-mlflow}@mlflow-db:5432/${MLFLOW_DB_NAME:-mlflow}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required in .env}
+      MLFLOW_BACKEND_STORE_URI: postgresql://${MLFLOW_DB_USER:-mlflow}:${MLFLOW_DB_PASSWORD:?MLFLOW_DB_PASSWORD is required in .env}@mlflow-db:5432/${MLFLOW_DB_NAME:-mlflow}
       MLFLOW_ARTIFACT_ROOT: s3://mlflow/
     command: >
       mlflow server
       --host 0.0.0.0
       --port 5000
-      --backend-store-uri postgresql://${MLFLOW_DB_USER:-mlflow}:${MLFLOW_DB_PASSWORD:-mlflow}@mlflow-db:5432/${MLFLOW_DB_NAME:-mlflow}
+      --backend-store-uri postgresql://${MLFLOW_DB_USER:-mlflow}:${MLFLOW_DB_PASSWORD:?MLFLOW_DB_PASSWORD is required in .env}@mlflow-db:5432/${MLFLOW_DB_NAME:-mlflow}
       --artifacts-destination s3://mlflow/
     healthcheck:
       test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:5000/\")' || exit 1"]
@@ -192,10 +192,10 @@ services:
     image: okx-hft-ops-superset:latest
     container_name: superset-init
     environment:
-      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-please_change_this_secret_key}
-      SUPERSET_DATABASE_URI: postgresql://${SUPERSET_DB_USER:-superset}:${SUPERSET_DB_PASSWORD:-superset}@superset-db:5432/${SUPERSET_DB_NAME:-superset}
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:?SUPERSET_SECRET_KEY is required in .env}
+      SUPERSET_DATABASE_URI: postgresql://${SUPERSET_DB_USER:-superset}:${SUPERSET_DB_PASSWORD:?SUPERSET_DB_PASSWORD is required in .env}@superset-db:5432/${SUPERSET_DB_NAME:-superset}
       ADMIN_USERNAME: ${SUPERSET_ADMIN_USER:-admin}
-      ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:-admin}
+      ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:?SUPERSET_ADMIN_PASSWORD is required in .env}
       ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL:-admin@example.com}
     volumes:
       - superset_home:/app/superset_home
@@ -227,8 +227,8 @@ services:
     container_name: superset
     restart: unless-stopped
     environment:
-      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-please_change_this_secret_key}
-      SUPERSET_DATABASE_URI: postgresql://${SUPERSET_DB_USER:-superset}:${SUPERSET_DB_PASSWORD:-superset}@superset-db:5432/${SUPERSET_DB_NAME:-superset}
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:?SUPERSET_SECRET_KEY is required in .env}
+      SUPERSET_DATABASE_URI: postgresql://${SUPERSET_DB_USER:-superset}:${SUPERSET_DB_PASSWORD:?SUPERSET_DB_PASSWORD is required in .env}@superset-db:5432/${SUPERSET_DB_NAME:-superset}
       SUPERSET_LOAD_EXAMPLES: "false"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8088/health || exit 1"]
@@ -271,7 +271,7 @@ services:
           --lastname ${AIRFLOW_ADMIN_LASTNAME:-User} \
           --role Admin \
           --email ${AIRFLOW_ADMIN_EMAIL:-admin@example.com} \
-          --password ${AIRFLOW_ADMIN_PASSWORD:-admin} || true
+          --password ${AIRFLOW_ADMIN_PASSWORD:?AIRFLOW_ADMIN_PASSWORD is required in .env} || true
     restart: "no"
     depends_on:
       airflow-db:
@@ -334,6 +334,8 @@ services:
       GITSYNC_ROOT: "/git"
       GITSYNC_LINK: "repo"
       GITSYNC_PERIOD: "30s"
+      # -1: не падать на сетевых ошибках GitHub, повторять бесконечно (по умолчанию выход после первой).
+      GITSYNC_MAX_FAILURES: "-1"
       GITSYNC_ONE_TIME: "false"
       GITSYNC_DEPTH: "1"
       GITSYNC_SSH: "true"

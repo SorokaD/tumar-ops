@@ -1,0 +1,97 @@
+# Проверки инфраструктурного репозитория: compose-файлы, конфиги мониторинга, сборка своих образов.
+# Ничего не деплоит и не ходит на сервер.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      # Контекст сборки сайта в CI не нужен, но путь должен резолвиться.
+      TUMAR_WEB_PATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compose files
+        run: |
+          set -euo pipefail
+          for f in docker/docker-compose.*.yaml; do
+            echo "::group::$f"
+            docker compose -f "$f" --env-file .env.example config --quiet
+            echo "::endgroup::"
+          done
+
+      - name: Prometheus config and alert rules
+        run: |
+          docker run --rm \
+            -v "$PWD/config/prometheus:/etc/prometheus:ro" \
+            --entrypoint promtool \
+            prom/prometheus:v2.54.1 \
+            check config /etc/prometheus/prometheus.yml
+
+      - name: Loki config
+        run: |
+          docker run --rm \
+            -v "$PWD/config/loki/loki-config.yml:/etc/loki/config.yml:ro" \
+            grafana/loki:3.2.1 \
+            -config.file=/etc/loki/config.yml -verify-config
+
+      - name: Promtail config
+        run: |
+          docker run --rm \
+            -v "$PWD/config/loki/promtail-config.yml:/etc/promtail/config.yml:ro" \
+            grafana/promtail:3.2.1 \
+            -config.file=/etc/promtail/config.yml -check-syntax
+
+      - name: Blackbox config
+        run: |
+          docker run --rm \
+            -v "$PWD/config/blackbox/blackbox.yml:/etc/blackbox/blackbox.yml:ro" \
+            prom/blackbox-exporter:v0.25.0 \
+            --config.file=/etc/blackbox/blackbox.yml --config.check
+
+      - name: Grafana dashboards are valid JSON
+        run: |
+          set -euo pipefail
+          for f in config/grafana/dashboards/*.json; do
+            jq empty "$f" || { echo "invalid JSON: $f"; exit 1; }
+          done
+
+      - name: YAML syntax
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 - <<'EOF'
+          import pathlib, sys, yaml
+          bad = 0
+          for path in sorted(pathlib.Path("config").rglob("*.y*ml")):
+              try:
+                  yaml.safe_load(path.read_text(encoding="utf-8"))
+              except yaml.YAMLError as exc:
+                  bad += 1
+                  print(f"{path}: {exc}")
+          sys.exit(1 if bad else 0)
+          EOF
+
+      - name: Python syntax
+        run: python3 -m py_compile scripts/keepalive.py config/superset/superset_config.py
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build MLflow image
+        run: docker build -f Dockerfile.mlflow -t okx-hft-ops-mlflow:ci .
+
+      - name: Build Superset image
+        run: docker build -f Dockerfile.superset -t okx-hft-ops-superset:ci .
