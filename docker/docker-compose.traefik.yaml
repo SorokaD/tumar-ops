@@ -94,5 +94,7 @@ networks:
     external: true
 
 volumes:
+  # ACME-сертификаты: том создан вне Compose, имя фиксировано.
   traefik_letsencrypt:
-    driver: local
+    name: traefik_letsencrypt
+    external: true
