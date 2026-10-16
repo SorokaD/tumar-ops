@@ -7,7 +7,9 @@
     (Prometheus + alert rules), `-verify-config` Loki, `-check-syntax` Promtail, `--config.check` Blackbox,
     JSON дашбордов Grafana, синтаксис YAML и Python;
   - `docker`: сборка `Dockerfile.mlflow` и `Dockerfile.superset`.
-- **Deploy** (`.github/workflows/deploy.yml`) — push в `main` → CI → ручное подтверждение (`production`) → SSH:
+- **Deploy** (`.github/workflows/deploy.yml`) — push в `main` → CI → ручное подтверждение (`production`) → SSH.
+  В Environment снять **Allow administrators to bypass**, иначе admin обходит Approve.
+- Шаги на сервере:
   1. отказ, если в checkout на сервере есть ручные правки отслеживаемых файлов;
   2. `git fetch` + `git reset --hard <sha>`;
   3. `scripts/deploy.sh <old> <new>` — проверяет все compose-файлы и трогает только затронутое.
