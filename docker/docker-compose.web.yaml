@@ -42,6 +42,11 @@ services:
       NEXT_PUBLIC_SUPERSET_PUBLIC_URL: ${NEXT_PUBLIC_SUPERSET_PUBLIC_URL:-}
       NEXT_PUBLIC_SITE_AUTHOR: ${NEXT_PUBLIC_SITE_AUTHOR:-Dmitrii Soroka}
       NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:-}
+      # Read-only Timescale URL for /projects/hft/live (never commit the password).
+      HFT_DATABASE_URL: ${HFT_DATABASE_URL:-}
+      HFT_DATABASE_SSL: ${HFT_DATABASE_SSL:-}
+      HFT_PUBLIC_STRATEGY: ${HFT_PUBLIC_STRATEGY:-random_baseline_v1}
+      HFT_PUBLIC_INST_ID: ${HFT_PUBLIC_INST_ID:-BTC-USDT-SWAP}
     healthcheck:
       test:
         [
